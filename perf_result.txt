@@ -1,0 +1,12 @@
+_make_solver
+0.18598149996250868
+_make_solver + _fill_options
+0.9680372000439093
+_make_solver + _fill_options + _solve_single_possibilities(True)
+1.936129699985031
+_make_solver + _fill_options + _solve_single_possibilities(False)
+1.0664947999757715
+_make_solver + _fill_options + _solve_only_one_occurrence(True)
+5.378885000012815
+_make_solver + _fill_options + _solve_only_one_occurrence(False)
+2.2786083000246435
