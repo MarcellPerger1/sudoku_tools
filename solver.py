@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import itertools
 import sys
-from collections import Counter
+from collections import Counter, UserList
+from collections.abc import MutableSequence
 from dataclasses import dataclass
 from typing import IO
 
@@ -30,10 +31,24 @@ def pos_to_idx(pos: tuple[int, int]):
     return pos[0] + pos[1] * 9
 
 
+@dataclass
+class Board:
+    grid: list[int]
+
+    def __post_init__(self):
+        if not isinstance(self.grid, (list, UserList, MutableSequence)):
+            raise TypeError("grid must be a list")
+        if len(self.grid) != 81:
+            raise ValueError("grid must have 81 elements (9x9)")
+        if all(v in range(0, 10) for v in self.grid):
+            raise ValueError("Each element of grid must be 0-9")
+
+
 class Solver:
     grid: list[SquareInfo]
 
-    def __init__(self, grid: list[int]):
+    def __init__(self, board: list[int] | Board):
+        grid = board.grid if isinstance(board, Board) else board
         self.grid = [
             SquareInfo(v, set(SET_1_TO_9) if v == 0 else {v}, idx_to_pos(i))
             for i, v in enumerate(grid)]
@@ -370,7 +385,7 @@ def main():
     print('After solve_only_one_occurrence_x')
     s2._solve_only_one_occurrence_x()
     s2.print()
-    perf_it()
+    # perf_it()
 
 
 
