@@ -37,6 +37,7 @@ class Solver:
         self.grid = [
             SquareInfo(v, set(SET_1_TO_9) if v == 0 else {v}, idx_to_pos(i))
             for i, v in enumerate(grid)]
+        self.has_solution = None
 
     def get_pos(self, pos: tuple[int, int]):
         return self.grid[pos_to_idx(pos)]
@@ -55,11 +56,50 @@ class Solver:
                      for x in range(9)) for y in range(9))
 
     def solve(self):
+        if not self.check_validity():
+            raise ValueError("The sudoku is not valid, precondition not met")
         self._fill_options()
+        changed = True
+        while changed:
+            changed = self._solve_single_possibilities_x()
+            changed = self._solve_only_one_occurrence_x() or changed
+        if not self.check_validity():
+            raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
+        self.has_solution = self.is_solved()
+        return self.has_solution
+
+    def check_validity(self):
+        for x in range(9):
+            if not self._check_validity_x_col(x):
+                return False
+        for y in range(9):
+            if not self._check_validity_y_row(y):
+                return False
+        for rx in range(3):
+            for ry in range(3):
+                if not self._check_validity_region(rx, ry):
+                    return False
+        return True
+
+    def _check_validity_x_col(self, x: int):
+        return self._check_validity_seq([self.get_pos((x, y)) for y in range(9)])
+    def _check_validity_y_row(self, y: int):
+        return self._check_validity_seq([self.get_pos((x, y)) for x in range(9)])
+    def _check_validity_region(self, r_idx_x: int, r_idx_y: int) -> bool:
+        rx0 = r_idx_x * 3
+        ry0 = r_idx_y * 3
+        return self._check_validity_seq([
+            self.get_pos((x, y)) for x in range(rx0, rx0+3) for y in range(ry0, ry0+3)])
+
+    def _check_validity_seq(self, seq: list[SquareInfo]):
+        values = [sq.value for sq in seq if sq.value != 0]
+        return len(set(values)) == len(values)
 
     def _solve_only_one_occurrence_x(self):
+        changed = False
         while self._solve_only_one_occurrence(True):
-            ...
+            changed = True
+        return changed
 
     def _solve_only_one_occurrence(self, update_options: bool = True) -> bool:
         changed = False
@@ -125,8 +165,10 @@ class Solver:
         self._fill_options_region(x // 3, y // 3)
 
     def _solve_single_possibilities_x(self):
+        changed = False
         while self._solve_single_possibilities(True):
-            pass
+            changed = True
+        return changed
 
     def _solve_single_possibilities(self, update_options: bool=True) -> bool:
         changed = False
@@ -188,6 +230,9 @@ class Solver:
                 if sq.value == 0:
                     sq.options -= definite_nums
 
+    def is_solved(self):
+        return all([sq.value != 0 for sq in self.grid])
+
 
 def perf_it():
     import timeit, io
@@ -244,6 +289,32 @@ def perf_it():
     print2('_make_solver + _fill_options + _solve_only_one_occurrence(False)')
     print2(min(timeit.repeat(ms_fo_solve_1_o_f, number=10_000)))
 
+    def ms_fo_solve_single_possibilities_x():
+        s = make_solver()
+        s._fill_options()
+        s._solve_single_possibilities_x()
+    print2('_make_solver + _fill_options + _solve_single_possibilities_x')
+    print2(min(timeit.repeat(ms_fo_solve_single_possibilities_x, number=10_000)))
+
+    def ms_fo_solve_1_o_x():
+        s = make_solver()
+        s._fill_options()
+        s._solve_only_one_occurrence_x()
+    print2('_make_solver + _fill_options + _solve_only_one_occurrence_x')
+    print2(min(timeit.repeat(ms_fo_solve_1_o_x, number=10_000)))
+
+    def ms_fo_solt_alt():
+        s = make_solver()
+        s._fill_options()
+        a = b = True
+        while a or b:
+            a = s._solve_only_one_occurrence()
+            b = s._solve_single_possibilities()
+
+    print2('_make_solver + _fill_options + _solve_:alternating')
+    print2(min(timeit.repeat(ms_fo_solt_alt, number=10_000)))
+
+
     with open('perf_result.txt', 'w') as f:
         f.write(sio.getvalue())
 
@@ -299,7 +370,7 @@ def main():
     print('After solve_only_one_occurrence_x')
     s2._solve_only_one_occurrence_x()
     s2.print()
-    # perf_it()
+    perf_it()
 
 
 

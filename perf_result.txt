@@ -1,12 +1,18 @@
 _make_solver
-0.18598149996250868
+0.1905231000855565
 _make_solver + _fill_options
-0.9680372000439093
+0.984648699988611
 _make_solver + _fill_options + _solve_single_possibilities(True)
-1.936129699985031
+1.9730065000476316
 _make_solver + _fill_options + _solve_single_possibilities(False)
-1.0664947999757715
+1.0817036000080407
 _make_solver + _fill_options + _solve_only_one_occurrence(True)
-5.378885000012815
+5.455601599998772
 _make_solver + _fill_options + _solve_only_one_occurrence(False)
-2.2786083000246435
+2.294159499928355
+_make_solver + _fill_options + _solve_single_possibilities_x
+5.292342099943198
+_make_solver + _fill_options + _solve_only_one_occurrence_x
+8.828448499902152
+_make_solver + _fill_options + _solve_:alternating
+9.07858860003762
