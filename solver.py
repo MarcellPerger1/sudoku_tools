@@ -44,6 +44,10 @@ class Board:
             raise ValueError("Each element of grid must be 0-9")
 
 
+class InvalidSudokuError(ValueError):
+    pass
+
+
 class Solver:
     grid: list[SquareInfo]
 
@@ -72,7 +76,7 @@ class Solver:
 
     def solve(self):
         if not self.check_validity():
-            raise ValueError("The sudoku is not valid, precondition not met")
+            raise InvalidSudokuError("The sudoku is not valid, precondition not met")
         self._fill_options()
         changed = True
         while changed:
