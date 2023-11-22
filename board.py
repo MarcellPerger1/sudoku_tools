@@ -16,7 +16,7 @@ class Board:
             raise TypeError("grid must be a list")
         if len(self.grid) != 81:
             raise ValueError("grid must have 81 elements (9x9)")
-        if all(v in range(0, 10) for v in self.grid):
+        if not all(v in range(0, 10) for v in self.grid):
             raise ValueError("Each element of grid must be 0-9")
 
     @classmethod
@@ -26,7 +26,7 @@ class Board:
 
     @classmethod
     def flat_to_nested(cls, flat: list[T]) -> list[list[T]]:
-        assert len(flat) == 9
+        assert len(flat) == 81
         return [[flat[cls.pos_to_idx((x, y))] for y in range(9)] for x in range(9)]
 
     def copy(self):
@@ -40,6 +40,7 @@ class Board:
     def __setitem__(self, key: tuple[int, int] | int | slice, value: int):
         if isinstance(key, (int, slice)):
             self.grid[key] = value
+            return
         self.grid[self.pos_to_idx(key)] = value
 
     @classmethod
