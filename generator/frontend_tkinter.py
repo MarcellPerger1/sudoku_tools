@@ -2,7 +2,6 @@ from backend import GeneratorBackend, Board
 import tkinter as tk
 from tkinter import filedialog
 import csv
-import threading
 
 
 def idx_to_pos(idx: int) -> tuple[int, int]:
@@ -65,7 +64,9 @@ class TkinterFrontendApp:
                 background=bg, text=str(self.orig_board[i]), foreground=text_color)
 
     def save_as_csv(self, _event=None):
-        filename = filedialog.asksaveasfilename(filetypes=(('CSV files', '*.csv'), ('All files', '*.*')), defaultextension='.csv')
+        filename = filedialog.asksaveasfilename(
+            filetypes=(('CSV files', '*.csv'), ('All files', '*.*')),
+            defaultextension='.csv', parent=self.root, title='Save sudoku as CSV')
         if not filename: return
         with open(filename, 'w') as f:
             # universal newline on python so use unix dialect with \n (\r\n would be converted to \n\n)
