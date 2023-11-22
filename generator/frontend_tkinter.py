@@ -1,4 +1,4 @@
-from backend import GeneratorBackend
+from backend import GeneratorBackend, Board
 import tkinter as tk
 
 
@@ -10,6 +10,16 @@ def pos_to_idx(pos: tuple[int, int]):
 
 class TkinterFrontendApp:
     def __init__(self):
+        self.board = Board([
+            1,2,3,4,5,6,7,8,9,
+            4,5,6,7,8,9,1,2,3,
+            7,8,9,1,2,3,4,5,6,
+            5,6,4,8,9,7,2,3,1,
+            2,3,1,5,6,4,8,9,7,
+            8,9,7,2,3,1,5,6,4,
+            3,1,2,9,7,8,6,4,5,
+            9,7,8,6,4,5,3,1,2,
+            6,4,5,3,1,2,9,7,8, ])
         self.root = tk.Tk()
         self.root.title('Sudoku generator frontend (tkinter)')
 
@@ -24,7 +34,7 @@ class TkinterFrontendApp:
             self.table_container.rowconfigure(i, minsize=25, weight=1)
         for x in range(9):
             for y in range(9):
-                num_label = tk.Label(self.table_container, text='8', highlightthickness=1, highlightcolor='black', highlightbackground='black')
+                num_label = tk.Label(self.table_container, text=str(self.board[(x,y)]), highlightthickness=1, highlightcolor='black', highlightbackground='black')
                 num_label.grid(row=x, column=y, sticky='NSEW')
                 self.tb_elements.append(num_label)
         ...
