@@ -5,6 +5,8 @@ from collections.abc import MutableSequence
 from dataclasses import dataclass
 from typing import TypeVar
 
+T = TypeVar('T')
+
 @dataclass
 class Board:
     grid: list[int]
