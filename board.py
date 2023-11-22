@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import UserList
+from collections.abc import MutableSequence
 from dataclasses import dataclass
 from typing import TypeVar
 
