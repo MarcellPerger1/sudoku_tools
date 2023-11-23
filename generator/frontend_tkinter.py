@@ -12,18 +12,9 @@ def pos_to_idx(pos: tuple[int, int]):
 
 class TkinterFrontendApp:
     def __init__(self):
-        self.orig_board = Board([
-            1,2,3,4,5,6,7,8,9,
-            4,5,6,7,8,9,1,2,3,
-            7,8,9,1,2,3,4,5,6,
-            5,6,4,8,9,7,2,3,1,
-            2,3,1,5,6,4,8,9,7,
-            8,9,7,2,3,1,5,6,4,
-            3,1,2,9,7,8,6,4,5,
-            9,7,8,6,4,5,3,1,2,
-            6,4,5,3,1,2,9,7,8, ])
-        self.board = self.orig_board.copy()
         self.backend = GeneratorBackend()
+        self.orig_board = self.backend.generate_random_board()
+        self.board = self.orig_board.copy()
         self.root = tk.Tk()
         self.root.title('Sudoku generator frontend (tkinter)')
         self.root.columnconfigure(1, weight=1)
@@ -99,4 +90,9 @@ class TkinterFrontendApp:
 
 
 if __name__ == '__main__':
+    import time
+    t0 = time.perf_counter()
+    print(GeneratorBackend().find_boards_matching([*range(15)], print_progress=20,stop_after=10_000))
+    t1 = time.perf_counter()
+    print(t1 - t0)
     TkinterFrontendApp().root.mainloop()

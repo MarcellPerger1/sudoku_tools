@@ -1,7 +1,132 @@
+import os
+import random
+
 from solver import Board, Solver
 
 
+BASE_BOARD = Board([
+    1,2,3,4,5,6,7,8,9,
+    4,5,6,7,8,9,1,2,3,
+    7,8,9,1,2,3,4,5,6,
+    5,6,4,8,9,7,2,3,1,
+    2,3,1,5,6,4,8,9,7,
+    8,9,7,2,3,1,5,6,4,
+    3,1,2,9,7,8,6,4,5,
+    9,7,8,6,4,5,3,1,2,
+    6,4,5,3,1,2,9,7,8,
+])
+def _check_base_board():
+    s = Solver(BASE_BOARD)
+    assert s.check_validity()
+    assert s.is_solved()
+
+_check_base_board()
+
+
 class GeneratorBackend:
+    def find_boards_matching(self, removal_order: list[int | tuple[int, int]],
+                             want_min: int = 8, stop_after=1_000, r: random.Random = None,
+                             print_progress=0) -> tuple[bool, Board]:
+        assert len(removal_order) >= want_min
+        best_board = None
+        best_i = 0
+        for i in range(stop_after):
+            if print_progress != 0 and i != 0 and i % print_progress == 0:
+                print(f'{i/stop_after*100:>4.1f}% progress ({i}/{stop_after} done)')
+            rand_board = self.generate_random_board(r)
+            # remove minimum acceptable things (optimisation)
+            for rm_pos in removal_order[:want_min]:
+                rand_board[rm_pos] = 0
+            if not self.is_solvable(rand_board): continue
+            # TODO: optim: remove 2/3/4 at a time then narrow it down? - more complex
+            for rm_i, rm_pos in enumerate(removal_order[want_min:], start=want_min):
+                rand_board[rm_pos] = 0
+                if not self.is_solvable(rand_board):
+                    last_i_solvable = rm_i - 1
+                    break
+            else:  # (meaning if no break), fully solvable
+                last_i_solvable = len(removal_order) - 1
+            # if none yet or better than prev best...
+            if best_board is None or last_i_solvable > best_i:
+                # ... set this as best
+                best_i = last_i_solvable
+                best_board = rand_board
+            if best_i >= len(removal_order) - 1:
+                assert best_i == len(removal_order) - 1
+                return True, best_board  # fulfilled request
+        return False, best_board
+
+    def _with_x_col_shuffled(self, board: Board, x0: int, new_cols: list[int]):
+        new_board = board.copy()
+        for xi, new_xi in enumerate(new_cols):
+            old_x = x0 + xi
+            new_x = x0 + new_xi
+            for y in range(9):
+                new_board[new_x, y] = board[old_x, y]
+        return new_board
+
+    def _with_y_row_shuffled(self, board: Board, y0: int, new_rows: list[int]):
+        new_board = board.copy()
+        for yi, new_yi in enumerate(new_rows):
+            old_y = y0 + yi
+            new_y = y0 + new_yi
+            for x in range(9):
+                new_board[new_y, x] = board[old_y, x]
+        return new_board
+
+    # [[nodiscard]]
+    def _shuffled_x_cols_in_x_region(self, board: Board, r: random.Random, r_idx_x: int) -> Board:
+        x0 = r_idx_x * 3
+        new_cols = [0, 1, 2]
+        r.shuffle(new_cols)
+        return self._with_x_col_shuffled(board, x0, new_cols)
+
+    # [[nodiscard]]
+    def _shuffled_y_rows_in_y_region(self, board: Board, r: random.Random, r_idx_y: int) -> Board:
+        y0 = r_idx_y * 3
+        new_rows = [0, 1, 2]
+        r.shuffle(new_rows)
+        return self._with_y_row_shuffled(board, y0, new_rows)
+
+    # [[nodiscard]]
+    def _shuffled_x_region_cols(self, board: Board, r: random.Random) -> Board:
+        new_cols_nested = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+        # shuffle the nested list so that the regions stay together, then flatten
+        r.shuffle(new_cols_nested)
+        new_cols_flat = [item for sublist in new_cols_nested for item in sublist]
+        return self._with_x_col_shuffled(board, 0, new_cols_flat)
+
+    # [[nodiscard]]
+    def _shuffled_y_region_rows(self, board: Board, r: random.Random) -> Board:
+        new_rows_nested = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+        # shuffle the nested list so that the regions stay together, then flatten
+        r.shuffle(new_rows_nested)
+        new_cols_flat = [item for sublist in new_rows_nested for item in sublist]
+        return self._with_y_row_shuffled(board, 0, new_cols_flat)
+
+    def _shuffled_numbers(self, board: Board, r: random.Random):
+        old_to_new_nums = [*range(1, 9+1)]
+        r.shuffle(old_to_new_nums)
+        # `- 1` to convert from 1-9 to 0-8
+        return Board([old_to_new_nums[board[i] - 1] for i in range(81)])
+
+    def generate_random_board(self, r: random.Random = None):
+        if r is None:
+            r = random.Random()
+        # we start from a known solution and try and change it in ways
+        # that preserve the property of being a sudoku solution
+        # I'm not sure if this can generate all possible sudoku solutions
+        # but it's good enough
+        board = BASE_BOARD.copy()
+        for rx in range(3):
+            board = self._shuffled_x_cols_in_x_region(board, r, rx)
+        for ry in range(3):
+            board = self._shuffled_y_rows_in_y_region(board, r, ry)
+        board = self._shuffled_x_region_cols(board, r)
+        board = self._shuffled_y_region_rows(board, r)
+        board = self._shuffled_numbers(board, r)  # not sure if this is necessary
+        return board
+
     def is_solvable(self, board: Board) -> bool:
         return Solver(board).solve()
 
