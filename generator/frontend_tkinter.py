@@ -100,24 +100,39 @@ class TkinterFrontendApp:
         self.update_colors()
 
 
-if __name__ == '__main__':
-    import time
-    t0 = time.perf_counter()
+def main():
+    import time, cProfile
+    def w_list(y: int, row: list[int]) -> list[tuple[int, int]]:
+        return [(x, y) for x in row]
     basic_want: list[tuple[int, int] | int] = [
-        (2, 0), (3, 0), (5, 0), (6, 0),
-        (1, 1), (2, 1), (6, 1), (7, 1),
-        (0, 2), (1, 2), (7, 2), (8, 2),
-        (0, 3), (1, 3), (2, 3), (6, 3), (7, 3), (8, 3),
-        (0, 4), (1, 4), (7, 4), (8, 4),
-        (0, 5), (8, 5),
-        # no (*, 6)
-        (0, 7), (1, 7), (7, 7), (8, 7), (2, 7), (6, 7),
-        (0, 8), (1, 8), (7, 8), (8, 8),
+        *w_list(0, [2, 3, 5, 6]),
+        *w_list(1, [1, 2, 3, 5, 6, 7]),
+        *w_list(2, [0, 1, 2, 6, 7, 8]),
+        *w_list(4, [0, 8]),
+        *w_list(5, [0, 1, 7, 8]),
+        *w_list(6, [0, 1, 4, 7, 8]),
+        *w_list(7, [0, 3, 4, 5, 8]),
+        *w_list(8, [0, 2, 3, 4, 5, 6, 8]),
     ]
-    matches, board = GeneratorBackend().find_boards_matching(
-        basic_want, want_min=len(basic_want),
-        print_progress=20,stop_after=1_000)
-    t1 = time.perf_counter()
+    extra_want = [
+        *w_list(1, [0, 8]),
+        *w_list(0, [1, 7]),
+        *w_list(0, [0, 8])
+    ]
+    def find_it():
+        return GeneratorBackend().find_boards_matching(
+            basic_want + extra_want, want_min=len(basic_want),
+            print_progress=20, stop_after=10_000)
+    with cProfile.Profile() as p:
+        t0 = time.perf_counter()
+        matches, board = find_it()
+        t1 = time.perf_counter()
     print(matches, board)
     print(t1 - t0)
+    p.print_stats(sort='cumtime')
+    p.dump_stats('./find_boards.prof')
     TkinterFrontendApp(curr_board=board).root.mainloop()
+
+
+if __name__ == '__main__':
+    main()
