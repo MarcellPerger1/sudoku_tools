@@ -45,9 +45,11 @@ class GeneratorBackend:
             if not self.is_solvable(rand_board): continue
             # TODO: optim: remove 2/3/4 at a time then narrow it down? - more complex
             for rm_i, rm_pos in enumerate(removal_order[want_min:], start=want_min):
+                was_at_pos = rand_board[rm_pos]
                 rand_board[rm_pos] = 0
                 if not self.is_solvable(rand_board):
                     last_i_solvable = rm_i - 1
+                    rand_board[rm_pos] = was_at_pos  # restore it (need curr num so that its solvable)
                     break
             else:  # (meaning if no break), fully solvable
                 last_i_solvable = len(removal_order) - 1
