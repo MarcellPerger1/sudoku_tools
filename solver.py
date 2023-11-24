@@ -87,9 +87,20 @@ class Solver:
         self.has_solution = self.is_solved()
         return self.has_solution
 
-    def solve_filtered(self, default: SolverFilterDefault = SolverFilterDefault.exclude,
+    def solve_filtered(self, default: SolverFilterDefault = None,
                 include: Iterable[SolverMethod] = None,
                 exclude: Iterable[SolverMethod] = None):
+        if default is None:
+            # default      i
+            #         None | value
+            # e None    i      e
+            #   value   i      e
+            if include is None:
+                # only excludes (so include by default) or no args = include all
+                default = SolverFilterDefault.include
+            else:
+                # only includes (so exclude by default) or both = exclude from the includes
+                default = SolverFilterDefault.exclude
         if include is None: include = ()
         if exclude is None: exclude = ()
         if default == SolverFilterDefault.include:
