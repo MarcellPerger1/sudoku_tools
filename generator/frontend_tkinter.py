@@ -106,7 +106,21 @@ class TkinterFrontendApp:
 if __name__ == '__main__':
     import time
     t0 = time.perf_counter()
-    print(GeneratorBackend().find_boards_matching([*range(15)], print_progress=20,stop_after=10_000))
+    basic_want: list[tuple[int, int] | int] = [
+        (2, 0), (3, 0), (5, 0), (6, 0),
+        (1, 1), (2, 1), (6, 1), (7, 1),
+        (0, 2), (1, 2), (7, 2), (8, 2),
+        (0, 3), (1, 3), (2, 3), (6, 3), (7, 3), (8, 3),
+        (0, 4), (1, 4), (7, 4), (8, 4),
+        (0, 5), (8, 5),
+        # no (*, 6)
+        (0, 7), (1, 7), (7, 7), (8, 7), (2, 7), (6, 7),
+        (0, 8), (1, 8), (7, 8), (8, 8),
+    ]
+    matches, board = GeneratorBackend().find_boards_matching(
+        basic_want, want_min=len(basic_want),
+        print_progress=20,stop_after=1_000)
     t1 = time.perf_counter()
+    print(matches, board)
     print(t1 - t0)
-    TkinterFrontendApp().root.mainloop()
+    TkinterFrontendApp(curr_board=board).root.mainloop()
