@@ -73,8 +73,9 @@ class TkinterFrontendApp:
             defaultextension='.csv', parent=self.root, title='Save sudoku as CSV')
         if not filename: return
         with open(filename, 'w') as f:
+            rows = Board.to_printable_order(Board.flat_to_nested(self.board.grid))
             # universal newline on python so use unix dialect with \n (\r\n would be converted to \n\n)
-            csv.writer(f, csv.unix_dialect).writerows(Board.flat_to_nested(self.board.grid))
+            csv.writer(f, csv.unix_dialect).writerows(rows)
 
     def _get_event_sq_idx(self, event: 'tk.Event[tk.Misc]') -> int | None:
         if not isinstance(event.widget, tk.Label):
