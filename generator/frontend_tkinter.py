@@ -1,6 +1,10 @@
+from pathlib import Path
+
 from backend import GeneratorBackend, Board
 import tkinter as tk
 from tkinter import filedialog
+
+from solver import Solver, SolverMethod
 
 
 def idx_to_pos(idx: int) -> tuple[int, int]:
@@ -133,13 +137,24 @@ def main():
     #     t1 = time.perf_counter()
     # print(matches, board)
     # print(t1 - t0)
-    t0 = time.perf_counter()
-    matches, board = find_it_mp()
-    t1 = time.perf_counter()
-    print(t1 - t0)
-    print(matches, board)
+    board = None
+    if 0 or 0:
+        t0 = time.perf_counter()
+        matches, board = find_it_mp()
+        t1 = time.perf_counter()
+        print(t1 - t0)
+        print(matches, board)
     # p.print_stats(sort='cumtime')
     # p.dump_stats('./find_boards.prof')
+    def is_simple(filename: str | Path):
+        with open(filename) as f:
+            b = GeneratorBackend().load_board_csv(f)
+            s = Solver(b)
+            can_s = s.solve_filtered(include=[SolverMethod.one_occurrence_in])
+            print(f'{Path(filename).with_suffix("").name}: one_occurrence:', can_s, s.grid)
+    for p in Path('../out/').iterdir():
+        if p.suffix != '.csv': continue
+        is_simple(p)
     TkinterFrontendApp(curr_board=board).root.mainloop()
 
 
