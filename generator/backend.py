@@ -24,6 +24,11 @@ _check_base_board()
 
 
 class GeneratorBackend:
+    def solve_board(self, board: Board) -> tuple[bool, Board]:
+        s = Solver(board)
+        solvable = s.solve()
+        return solvable, Board([sq.value for sq in s.grid])
+
     def find_boards_matching(self, removal_order: list[int | tuple[int, int]],
                              want_min: int = 8, stop_after=1_000, r: random.Random = None,
                              print_progress=0) -> tuple[bool, Board]:
