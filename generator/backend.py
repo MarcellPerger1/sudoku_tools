@@ -1,5 +1,9 @@
-import os
+import csv
 import random
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsWrite
 
 from solver import Board, Solver
 
@@ -24,6 +28,13 @@ _check_base_board()
 
 
 class GeneratorBackend:
+    def store_board_csv(self, f: 'SupportsWrite[str]', board: Board | list[int]):
+        grid_flat = board.grid if isinstance(board, Board) else board
+        rows = Board.to_printable_order(Board.flat_to_nested(grid_flat))
+        # universal newline on python so use unix dialect
+        # with \n (\r\n would be converted to \n\n)
+        csv.writer(f, csv.unix_dialect).writerows(rows)
+
     def solve_board(self, board: Board) -> tuple[bool, Board]:
         s = Solver(board)
         solvable = s.solve()
