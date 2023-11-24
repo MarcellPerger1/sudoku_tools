@@ -4,7 +4,8 @@ import itertools
 import sys
 from collections import Counter
 from dataclasses import dataclass
-from typing import IO
+from enum import Enum, StrEnum
+from typing import IO, Iterable
 
 from board import Board
 
@@ -34,6 +35,16 @@ def pos_to_idx(pos: tuple[int, int]):
 
 class InvalidSudokuError(ValueError):
     pass
+
+
+class SolverFilterDefault(StrEnum):
+    exclude = 'exclude'
+    include = 'include'
+
+
+class SolverMethod(StrEnum):
+    one_occurrence_in = 'one_occurrence_in'
+    single_possibility = 'single_possibility'
 
 
 class Solver:
@@ -71,6 +82,42 @@ class Solver:
         while changed:
             changed = self._solve_single_possibilities_x()
             changed = self._solve_only_one_occurrence_x() or changed
+        if self.debug and not self.check_validity():
+            raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
+        self.has_solution = self.is_solved()
+        return self.has_solution
+
+    def solve_filtered(self, default: SolverFilterDefault = SolverFilterDefault.exclude,
+                include: Iterable[SolverMethod] = None,
+                exclude: Iterable[SolverMethod] = None):
+        if include is None: include = ()
+        if exclude is None: exclude = ()
+        if default == SolverFilterDefault.include:
+            # noinspection PyTypeChecker
+            solvers: set[SolverMethod] = set(SolverMethod)
+            solvers -= set(exclude)
+            solvers |= set(include)
+        else:
+            solvers = set(include) - set(exclude)
+        if len(solvers) == 0:
+            raise ValueError("All SolverMethods have been excluded "
+                             "(or none have been included)")
+        if solvers == set(SolverMethod):
+            return self.solve()  # use solve() method = everything
+        return self._solve_with_solvers(solvers)
+    solve_f = solve_filtered
+
+    def _solve_with_solvers(self, solvers: set[SolverMethod]):
+        if self.debug and not self.check_validity():
+            raise InvalidSudokuError("The sudoku is not valid, precondition not met")
+        self._fill_options()
+        changed = True
+        while changed:
+            changed = False
+            if SolverMethod.single_possibility in solvers:
+                changed = self._solve_single_possibilities_x() or changed
+            if SolverMethod.one_occurrence_in in solvers:
+                changed = self._solve_only_one_occurrence_x() or changed
         if self.debug and not self.check_validity():
             raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
         self.has_solution = self.is_solved()
