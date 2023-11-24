@@ -5,7 +5,7 @@ import sys
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum, StrEnum
-from typing import IO, Iterable
+from typing import IO, Iterable, cast
 
 from board import Board
 
@@ -90,6 +90,15 @@ class Solver:
     def solve_filtered(self, default: SolverFilterDefault = None,
                 include: Iterable[SolverMethod] = None,
                 exclude: Iterable[SolverMethod] = None):
+        solvers = self._get_solvers(default, exclude, include)
+        if solvers == set(SolverMethod):
+            # all solvers so use (probably) faster solve() method
+            return self.solve()
+        return self._solve_with_solvers(solvers)
+
+    def _get_solvers(self, default: SolverFilterDefault | None,
+                     exclude: Iterable[SolverMethod] | None,
+                     include: Iterable[SolverMethod] | None):
         if default is None:
             # default      i
             #         None | value
@@ -104,8 +113,7 @@ class Solver:
         if include is None: include = ()
         if exclude is None: exclude = ()
         if default == SolverFilterDefault.include:
-            # noinspection PyTypeChecker
-            solvers: set[SolverMethod] = set(SolverMethod)
+            solvers = cast(set[SolverMethod], set(SolverMethod))
             solvers -= set(exclude)
             solvers |= set(include)
         else:
@@ -113,9 +121,8 @@ class Solver:
         if len(solvers) == 0:
             raise ValueError("All SolverMethods have been excluded "
                              "(or none have been included)")
-        if solvers == set(SolverMethod):
-            return self.solve()  # use solve() method = everything
-        return self._solve_with_solvers(solvers)
+        return solvers
+
     solve_f = solve_filtered
 
     def _solve_with_solvers(self, solvers: set[SolverMethod]):
@@ -134,6 +141,7 @@ class Solver:
         self.has_solution = self.is_solved()
         return self.has_solution
 
+    # region check_validity
     def check_validity(self):
         for x in range(9):
             if not self._check_validity_x_col(x):
@@ -160,7 +168,9 @@ class Solver:
     def _check_validity_seq(self, seq: list[SquareInfo]):
         values = [sq.value for sq in seq if sq.value != 0]
         return len(set(values)) == len(values)
+    # endregion
 
+    # region _solve_only_one_occurrence
     def _solve_only_one_occurrence_x(self):
         changed = False
         while self._solve_only_one_occurrence(True):
@@ -223,13 +233,9 @@ class Solver:
                     changed = True
                     break
         return changed
+    # endregion
 
-    def _update_pos(self, pos: tuple[int, int]):
-        x, y = pos
-        self._fill_options_x_col(x)
-        self._fill_options_y_row(y)
-        self._fill_options_region(x // 3, y // 3)
-
+    # region _solve_single_possibilities
     def _solve_single_possibilities_x(self):
         changed = False
         while self._solve_single_possibilities(True):
@@ -257,7 +263,15 @@ class Solver:
                         self._update_pos((x, y))
                         changed = True
         return changed
+    # endregion
 
+    def _update_pos(self, pos: tuple[int, int]):
+        x, y = pos
+        self._fill_options_x_col(x)
+        self._fill_options_y_row(y)
+        self._fill_options_region(x // 3, y // 3)
+
+    # region _fill_options
     def _fill_options(self):
         for x in range(9):
             self._fill_options_x_col(x)
@@ -295,6 +309,7 @@ class Solver:
                 sq = self.get_pos((x, y))
                 if sq.value == 0:
                     sq.options -= definite_nums
+    # endregion
 
     def is_solved(self):
         return all([sq.value != 0 for sq in self.grid])
