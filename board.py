@@ -23,6 +23,7 @@ class Board:
     def swap_rows(cls, nested: list[list[T]]) -> list[list[T]]:
         return [[nested[x][y] for x in range(9)] for y in range(9)]
     to_printable_order = swap_rows
+    parse_printable_order = swap_rows
 
     @classmethod
     def nested_to_flat(cls, nested: list[list[T]]) -> list[T]:

@@ -2,10 +2,10 @@ import csv
 from multiprocessing.pool import Pool
 import os
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
-    from _typeshed import SupportsWrite
+    from _typeshed import SupportsWrite, SupportsRead
 
 from solver import Board, Solver
 
@@ -30,6 +30,12 @@ _check_base_board()
 
 
 class GeneratorBackend:
+    def load_board_csv(self, f: Iterable[str]) -> Board:
+        reader = csv.reader(f, csv.unix_dialect)
+        rows = [[int(sv) for sv in s_row] for s_row in reader]
+        grid_flat = Board.nested_to_flat(Board.parse_printable_order(rows))
+        return Board(grid_flat)
+
     def store_board_csv(self, f: 'SupportsWrite[str]', board: Board | list[int]):
         grid_flat = board.grid if isinstance(board, Board) else board
         rows = Board.to_printable_order(Board.flat_to_nested(grid_flat))
