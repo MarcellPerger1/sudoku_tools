@@ -33,7 +33,7 @@ class GeneratorBackend:
     def load_board_csv(self, f: Iterable[str]) -> Board:
         reader = csv.reader(f, csv.unix_dialect)
         rows = [[int(sv) for sv in s_row] for s_row in reader]
-        grid_flat = Board.nested_to_flat(Board.parse_printable_order(rows))
+        grid_flat = Board.nested_to_flat(rows)
         return Board(grid_flat)
 
     def store_board_csv(self, f: 'SupportsWrite[str]', board: Board | list[int]):
