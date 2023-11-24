@@ -1,4 +1,6 @@
 import csv
+from multiprocessing.pool import Pool
+import os
 import random
 from typing import TYPE_CHECKING
 
@@ -40,9 +42,50 @@ class GeneratorBackend:
         solvable = s.solve()
         return solvable, Board([sq.value for sq in s.grid])
 
+    def find_boards_matching_parallel(
+            self, removal_order: list[int | tuple[int, int]],
+            cores: int = None, want_min: int = 8, stop_after=1_000,
+            print_progress=0) -> tuple[bool, Board]:
+        solved, best_i, best_b = self._find_boards_matching_parallel(
+            removal_order, cores, want_min, stop_after, print_progress)
+        return solved, best_b
+
+    def _find_boards_matching_parallel(
+            self, removal_order: list[int | tuple[int, int]],
+            cores: int = None, want_min: int = 8, stop_after=1_000,
+            print_progress=0) -> tuple[bool, int, Board]:
+        if cores is None:
+            cores = (os.cpu_count() or 4) // 2
+        sys_rand = random.SystemRandom()
+        with Pool(cores) as ppool:
+            async_result_list = [
+                ppool.apply_async(
+                    self._find_boards_matching, args=(
+                        removal_order, want_min, stop_after // cores,
+                        random.Random(sys_rand.getrandbits(32)),
+                        print_progress if i == 0 else 0
+                    )  # only print from 1 process
+                ) for i in range(cores)
+            ]
+            result_list = [ar.get() for ar in async_result_list]
+        return self._merge_proc_results(result_list)
+
+    def _merge_proc_results(self, results: list[tuple[bool, int, Board | None]]) -> tuple[bool, int, Board]:
+        def largest_i(r: tuple[bool, int, Board]):
+            return r[1]
+        return max([r for r in results if r[2] is not None],
+                   key=largest_i, default=(False, 0, None))
+
     def find_boards_matching(self, removal_order: list[int | tuple[int, int]],
                              want_min: int = 8, stop_after=1_000, r: random.Random = None,
                              print_progress=0) -> tuple[bool, Board]:
+        solved, best_i, best_b = self._find_boards_matching(
+            removal_order, want_min, stop_after, r, print_progress)
+        return solved, best_b
+
+    def _find_boards_matching(self, removal_order: list[int | tuple[int, int]],
+                             want_min: int = 8, stop_after=1_000, r: random.Random = None,
+                             print_progress=0) -> tuple[bool, int, Board]:
         assert len(removal_order) >= want_min
         best_board = None
         best_i = 0
@@ -71,8 +114,8 @@ class GeneratorBackend:
                 best_board = rand_board
             if best_i >= len(removal_order) - 1:
                 assert best_i == len(removal_order) - 1
-                return True, best_board  # fulfilled request
-        return False, best_board
+                return True, best_i, best_board  # fulfilled request
+        return False, best_i, best_board
 
     def _with_x_col_shuffled(self, board: Board, x0: int, new_cols: list[int]):
         new_board = board.copy()
