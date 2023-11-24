@@ -11,10 +11,16 @@ def pos_to_idx(pos: tuple[int, int]):
 
 
 class TkinterFrontendApp:
-    def __init__(self):
+    def __init__(self, orig_board: Board = None, curr_board: Board = None):
         self.backend = GeneratorBackend()
-        self.orig_board = self.backend.generate_random_board()
-        self.board = self.orig_board.copy()
+        if curr_board is None:
+            self.orig_board = (orig_board if orig_board is not None
+                               else self.backend.generate_random_board())
+            self.board = self.orig_board.copy()
+        else:
+            self.orig_board = (orig_board if orig_board is not None
+                               else self._curr_to_orig_board(curr_board))
+            self.board = curr_board.copy()
         self.root = tk.Tk()
         self.root.title('Sudoku generator frontend (tkinter)')
         self.root.columnconfigure(1, weight=1)
@@ -29,6 +35,13 @@ class TkinterFrontendApp:
         self.update_colors()
         self.root.bind_all('<Button-1>', self.onclick)
         self.root.bind_all('<Button-3>', self.on_right_click)
+
+    def _curr_to_orig_board(self, curr_board):
+        is_solvable, solution = self.backend.solve_board(curr_board)
+        if not is_solvable:
+            raise ValueError("only curr_board was specified and its "
+                             "not solvable so there is no orig_board")
+        return solution
 
     def get_table_entry(self, x: int, y: int):
         return self.tb_elements[pos_to_idx((x, y))]
