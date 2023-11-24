@@ -4,7 +4,7 @@ import itertools
 import sys
 from collections import Counter
 from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import StrEnum
 from typing import IO, Iterable, cast
 
 from board import Board
@@ -74,6 +74,38 @@ class Solver:
             ' '.join(f'{self.get_pos((x, y)).fmt():<27}'
                      for x in range(9)) for y in range(9))
 
+    # region check_validity
+    def check_validity(self):
+        for x in range(9):
+            if not self._check_validity_x_col(x):
+                return False
+        for y in range(9):
+            if not self._check_validity_y_row(y):
+                return False
+        for rx in range(3):
+            for ry in range(3):
+                if not self._check_validity_region(rx, ry):
+                    return False
+        return True
+
+    def _check_validity_x_col(self, x: int):
+        return self._check_validity_seq([self.get_pos((x, y)) for y in range(9)])
+    def _check_validity_y_row(self, y: int):
+        return self._check_validity_seq([self.get_pos((x, y)) for x in range(9)])
+    def _check_validity_region(self, r_idx_x: int, r_idx_y: int) -> bool:
+        rx0 = r_idx_x * 3
+        ry0 = r_idx_y * 3
+        return self._check_validity_seq([
+            self.get_pos((x, y)) for x in range(rx0, rx0+3) for y in range(ry0, ry0+3)])
+
+    def _check_validity_seq(self, seq: list[SquareInfo]):
+        values = [sq.value for sq in seq if sq.value != 0]
+        return len(set(values)) == len(values)
+    # endregion
+
+    def is_solved(self):
+        return all([sq.value != 0 for sq in self.grid])
+
     def solve(self):
         if self.debug and not self.check_validity():
             raise InvalidSudokuError("The sudoku is not valid, precondition not met")
@@ -87,6 +119,7 @@ class Solver:
         self.has_solution = self.is_solved()
         return self.has_solution
 
+    # region solve_filtered
     def solve_filtered(self, default: SolverFilterDefault = None,
                 include: Iterable[SolverMethod] = None,
                 exclude: Iterable[SolverMethod] = None):
@@ -122,7 +155,6 @@ class Solver:
             raise ValueError("All SolverMethods have been excluded "
                              "(or none have been included)")
         return solvers
-
     solve_f = solve_filtered
 
     def _solve_with_solvers(self, solvers: set[SolverMethod]):
@@ -140,34 +172,6 @@ class Solver:
             raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
         self.has_solution = self.is_solved()
         return self.has_solution
-
-    # region check_validity
-    def check_validity(self):
-        for x in range(9):
-            if not self._check_validity_x_col(x):
-                return False
-        for y in range(9):
-            if not self._check_validity_y_row(y):
-                return False
-        for rx in range(3):
-            for ry in range(3):
-                if not self._check_validity_region(rx, ry):
-                    return False
-        return True
-
-    def _check_validity_x_col(self, x: int):
-        return self._check_validity_seq([self.get_pos((x, y)) for y in range(9)])
-    def _check_validity_y_row(self, y: int):
-        return self._check_validity_seq([self.get_pos((x, y)) for x in range(9)])
-    def _check_validity_region(self, r_idx_x: int, r_idx_y: int) -> bool:
-        rx0 = r_idx_x * 3
-        ry0 = r_idx_y * 3
-        return self._check_validity_seq([
-            self.get_pos((x, y)) for x in range(rx0, rx0+3) for y in range(ry0, ry0+3)])
-
-    def _check_validity_seq(self, seq: list[SquareInfo]):
-        values = [sq.value for sq in seq if sq.value != 0]
-        return len(set(values)) == len(values)
     # endregion
 
     # region _solve_only_one_occurrence
@@ -310,9 +314,6 @@ class Solver:
                 if sq.value == 0:
                     sq.options -= definite_nums
     # endregion
-
-    def is_solved(self):
-        return all([sq.value != 0 for sq in self.grid])
 
 
 def perf_it():
