@@ -122,15 +122,24 @@ def main():
     def find_it():
         return GeneratorBackend().find_boards_matching(
             basic_want + extra_want, want_min=len(basic_want),
-            print_progress=20, stop_after=10_000)
-    with cProfile.Profile() as p:
-        t0 = time.perf_counter()
-        matches, board = find_it()
-        t1 = time.perf_counter()
-    print(matches, board)
+            print_progress=200, stop_after=10_000)
+    def find_it_mp():
+        return GeneratorBackend().find_boards_matching_parallel(
+            basic_want + extra_want, want_min=len(basic_want),
+            print_progress=200, stop_after=10_000)
+    # with cProfile.Profile() as p:
+    #     t0 = time.perf_counter()
+    #     matches, board = find_it()
+    #     t1 = time.perf_counter()
+    # print(matches, board)
+    # print(t1 - t0)
+    t0 = time.perf_counter()
+    matches, board = find_it_mp()
+    t1 = time.perf_counter()
     print(t1 - t0)
-    p.print_stats(sort='cumtime')
-    p.dump_stats('./find_boards.prof')
+    print(matches, board)
+    # p.print_stats(sort='cumtime')
+    # p.dump_stats('./find_boards.prof')
     TkinterFrontendApp(curr_board=board).root.mainloop()
 
 
