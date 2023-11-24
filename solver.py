@@ -39,12 +39,13 @@ class InvalidSudokuError(ValueError):
 class Solver:
     grid: list[SquareInfo]
 
-    def __init__(self, board: list[int] | Board):
+    def __init__(self, board: list[int] | Board, debug=True):
         grid = board.grid if isinstance(board, Board) else board
         self.grid = [
             SquareInfo(v, set(SET_1_TO_9) if v == 0 else {v}, idx_to_pos(i))
             for i, v in enumerate(grid)]
         self.has_solution = None
+        self.debug = debug
 
     def get_pos(self, pos: tuple[int, int]):
         return self.grid[pos_to_idx(pos)]
@@ -63,14 +64,14 @@ class Solver:
                      for x in range(9)) for y in range(9))
 
     def solve(self):
-        if not self.check_validity():
+        if self.debug and not self.check_validity():
             raise InvalidSudokuError("The sudoku is not valid, precondition not met")
         self._fill_options()
         changed = True
         while changed:
             changed = self._solve_single_possibilities_x()
             changed = self._solve_only_one_occurrence_x() or changed
-        if not self.check_validity():
+        if self.debug and not self.check_validity():
             raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
         self.has_solution = self.is_solved()
         return self.has_solution
