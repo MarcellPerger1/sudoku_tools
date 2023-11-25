@@ -5,13 +5,19 @@ import sys
 from collections import Counter
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import IO, Iterable, cast
+from typing import IO, Iterable, cast, TypeVar
 
 from board import Board
 
 TUPLE_RANGE9 = TUPLE_0_TO_8 = tuple(range(9))
 SET_1_TO_9 = frozenset(range(1, 9+1))
 TUPLE_1_TO_9 = tuple(range(1, 9+1))
+
+
+T = TypeVar('T')
+
+def chain_from_iterable(it: Iterable[Iterable[T]]) -> 'itertools.chain[T]':
+    return itertools.chain.from_iterable(it)
 
 @dataclass
 class SquareInfo:
@@ -268,6 +274,25 @@ class Solver:
                         changed = True
         return changed
     # endregion
+
+    def _solve_single_x_col_in_region(self, r_idx_x: int, r_idx_y: int):
+        rix = r_idx_x
+        riy = r_idx_y
+        r0x = rix * 3
+        r0y = riy * 3
+        options_in_cols = [
+            Counter(chain_from_iterable(
+                [self.get_pos((x, y)).options for y in range(r0y, r0y + 3)]
+            )) for x in range(r0x, r0x + 3)]
+        all_options = Counter(chain_from_iterable(options_in_cols))
+        for xi in range(3):
+            for num, count_in_col in options_in_cols[xi].items():
+                if count_in_col != 0 and count_in_col == all_options[num]:
+                    # only in this col (within curr region)
+                    # TODO
+                    ...
+            ...
+        ...
 
     def _update_pos(self, pos: tuple[int, int]):
         x, y = pos
