@@ -275,6 +275,20 @@ class Solver:
         return changed
     # endregion
 
+    # region _solve_only_in_single_line_in_region
+    def _solve_only_in_single_line_in_region_x(self):
+        changed = False
+        while self._solve_only_in_single_line_in_region(True):
+            changed = True
+        return changed
+
+    def _solve_only_in_single_line_in_region(self, update_options=True):
+        changed = False
+        for rx in range(3):
+            for ry in range(3):
+                changed = self._solve_single_x_col_in_region(rx, ry, update_options) or changed
+                changed = self._solve_single_y_row_in_region(rx, ry, update_options) or changed
+
     def _solve_single_x_col_in_region(self, r_idx_x: int, r_idx_y: int, update_options=True):
         rix = r_idx_x
         riy = r_idx_y
@@ -328,7 +342,7 @@ class Solver:
                     if update_options:
                         self._update_pos((x, y))
         return changed
-
+    # endregion
 
     def _update_pos(self, pos: tuple[int, int]):
         x, y = pos
