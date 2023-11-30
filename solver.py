@@ -298,7 +298,8 @@ class Solver:
             Counter(chain_from_iterable(
                 [self.get_pos((x, y)).options for y in range(r0y, r0y + 3)]
             )) for x in range(r0x, r0x + 3)]
-        all_options = Counter(chain_from_iterable(options_in_cols))
+        # rather precarious to use sum() on non-numeric types but performance
+        all_options = sum(options_in_cols, Counter())
         changed = True
         for xi in range(3):
             for num, count_in_col in options_in_cols[xi].items():
@@ -325,7 +326,8 @@ class Solver:
             Counter(chain_from_iterable(
                 [self.get_pos((x, y)).options for x in range(r0x, r0x + 3)]
             )) for y in range(r0y, r0y + 3)]
-        all_options = Counter(chain_from_iterable(options_in_rows))
+        # rather precarious to use sum() on non-numeric types but performance
+        all_options = sum(options_in_rows, Counter())
         changed = True
         for yi in range(3):
             for num, count_in_row in options_in_rows[yi].items():
@@ -528,7 +530,25 @@ def main():
     s2._solve_only_one_occurrence_x()
     s2.print()
     # perf_it()
-
+    print('After _solve_only_in_single_line_in_region')
+    s3 = Solver([8, 0, 4, 0, 0, 0, 0, 0, 2,
+                 2, 5, 1, 7, 0, 0, 0, 0, 3,
+                 0, 9, 0, 2, 0, 1, 8, 0, 7,
+                 0, 0, 0, 1, 7, 0, 9, 3, 0,
+                 7, 1, 9, 0, 0, 0, 0, 5, 0,
+                 0, 6, 0, 9, 0, 4, 7, 8, 0,
+                 1, 8, 5, 0, 6, 0, 0, 0, 0,
+                 0, 0, 0, 8, 9, 3, 1, 7, 0,
+                 0, 0, 0, 0, 0, 2, 4, 0, 8, ])
+    s3._fill_options()
+    s3._solve_only_in_single_line_in_region(True)
+    s3.print()
+    print('After _solve_only_in_single_line_in_region_x')
+    s3._solve_only_in_single_line_in_region_x()
+    s3.print()
+    print('+Solved')
+    s3.solve_filtered(include=[SolverMethod.single_possibility])
+    s3.print()
 
 
 
