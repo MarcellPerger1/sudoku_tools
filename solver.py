@@ -324,10 +324,12 @@ class Solver:
                 for y in range(9):
                     # skip if in current region
                     if r0y <= y < r0y + 3: continue
-                    self.get_pos((x, y)).options -= {num}
-                    changed = True
-                    if update_options:
-                        self._update_pos((x, y))
+                    opts = self.get_pos((x, y)).options
+                    if num in opts:
+                        opts -= {num}
+                        changed = True
+                        if update_options:
+                            self._update_pos((x, y))
         return changed
 
     def _solve_single_y_row_in_region(self, r_idx_x: int, r_idx_y: int, update_options=True):
@@ -352,10 +354,12 @@ class Solver:
                 for x in range(9):
                     # skip if in current region
                     if r0x <= x < r0x + 3: continue
-                    self.get_pos((x, y)).options -= {num}
-                    changed = True
-                    if update_options:
-                        self._update_pos((x, y))
+                    opts = self.get_pos((x, y)).options
+                    if num in opts:
+                        opts -= {num}
+                        changed = True
+                        if update_options:
+                            self._update_pos((x, y))
         return changed
     # endregion
 

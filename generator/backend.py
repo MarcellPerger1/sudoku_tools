@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Iterable
 if TYPE_CHECKING:
     from _typeshed import SupportsWrite, SupportsRead
 
-from solver import Board, Solver
-
+from solver import Board, Solver, SolverMethod
 
 BASE_BOARD = Board([
     1,2,3,4,5,6,7,8,9,
@@ -30,6 +29,9 @@ _check_base_board()
 
 
 class GeneratorBackend:
+    def is_easy(self, b: Board):
+        return Solver(b.copy()).solve_f(include=[SolverMethod.one_occurrence_in])
+
     def load_board_csv(self, f: Iterable[str]) -> Board:
         reader = csv.reader(f, csv.unix_dialect)
         rows = [[int(sv) for sv in s_row] for s_row in reader]

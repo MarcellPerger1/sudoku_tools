@@ -32,12 +32,22 @@ class TkinterFrontendApp:
         self.table_container = tk.Frame(self.root, highlightthickness=1, highlightbackground='black')
         self._create_9x9_table()
         self.table_container.grid(row=1,column=1, padx=5, pady=5., columnspan=2)
+        self.easy_lb = tk.Label(self.root, text='Easy: yes', fg='green')
+        self.easy_lb.grid(row=2, columnspan=2, column=1)
         self.button_save_csv = tk.Button(self.root, text='Save as CSV', command=self.save_as_csv)
-        self.button_save_csv.grid(row=2, column=1)
+        self.button_save_csv.grid(row=3, column=1)
 
         self.update_colors()
         self.root.bind_all('<Button-1>', self.onclick)
         self.root.bind_all('<Button-3>', self.on_right_click)
+        self._update_info()
+
+    def _update_info(self):
+        is_easy = self.backend.is_easy(self.board)
+        if is_easy:
+            self.easy_lb.configure(text='Easy: yes', fg='green')
+        else:
+            self.easy_lb.configure(text='Easy: NO', fg='orange')
 
     def _curr_to_orig_board(self, curr_board):
         is_solvable, solution = self.backend.solve_board(curr_board)
@@ -144,8 +154,23 @@ def main():
         t1 = time.perf_counter()
         print(t1 - t0)
         print(matches, board)
+    board = Board([
+        0, 0, 2, 0, 0, 0, 0, 9, 0,
+        4, 9, 6, 0, 0, 0, 0, 3, 7,
+        0, 8, 0, 0, 0, 0, 5, 0, 0,
+        0, 6, 0, 0, 1, 0, 2, 0, 0,
+        0, 0, 0, 0, 7, 5, 0, 6, 0,
+        2, 0, 7, 0, 3, 0, 9, 0, 0,
+        0, 3, 0, 6, 0, 0, 0, 0, 0,
+        7, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 3, 0, 9, 0, 0, 0,
+    ])
+    def is_easy(b: Board):
+        return Solver(b.copy()).solve_f(include=[SolverMethod.one_occurrence_in])
     # p.print_stats(sort='cumtime')
     # p.dump_stats('./find_boards.prof')
+    print(is_easy(board))
+    board = None
     def is_simple(filename: str | Path):
         with open(filename) as f:
             b = GeneratorBackend().load_board_csv(f)
