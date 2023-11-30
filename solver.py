@@ -51,6 +51,7 @@ class SolverFilterDefault(StrEnum):
 class SolverMethod(StrEnum):
     one_occurrence_in = 'one_occurrence_in'
     single_possibility = 'single_possibility'
+    line_in_region = 'line_in_region'
 
 
 class Solver:
@@ -121,6 +122,11 @@ class Solver:
         while changed:
             changed = self._solve_single_possibilities_x()
             changed = self._solve_only_one_occurrence_x() or changed
+            if self.is_solved():
+                break
+            else:
+                # do expensive ones here
+                changed = self._solve_only_in_single_line_in_region_x() or changed
         if self.debug and not self.check_validity():
             raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
         self.has_solution = self.is_solved()
@@ -175,6 +181,12 @@ class Solver:
                 changed = self._solve_single_possibilities_x() or changed
             if SolverMethod.one_occurrence_in in solvers:
                 changed = self._solve_only_one_occurrence_x() or changed
+            if self.is_solved():
+                break
+            else:
+                # do more expensive ones here
+                if SolverMethod.line_in_region in solvers:
+                    changed = self._solve_only_in_single_line_in_region_x() or changed
         if self.debug and not self.check_validity():
             raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
         self.has_solution = self.is_solved()
