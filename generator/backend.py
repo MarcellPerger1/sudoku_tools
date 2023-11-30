@@ -29,6 +29,19 @@ _check_base_board()
 
 
 class GeneratorBackend:
+    def find_hard_sudoku(self, max_tries: int = 1_000, r: random.Random = None, initial_n: int = 12):
+        if r is None:
+            r = random.Random()
+        for i in range(max_tries):
+            board = BASE_BOARD.copy()
+            initial_rm = r.sample(tuple(range(81)), initial_n)
+            for pos in initial_rm:
+                board[pos] = 0
+            if not self.is_solvable(board):
+                continue
+            ...  # TODO
+        ...
+
     def is_easy(self, b: Board):
         return Solver(b.copy()).solve_f(include=[SolverMethod.one_occurrence_in])
 
