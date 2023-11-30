@@ -106,7 +106,8 @@ class Solver:
 
     def _check_validity_seq(self, seq: list[SquareInfo]):
         values = [sq.value for sq in seq if sq.value != 0]
-        return len(set(values)) == len(values)
+        return (len(set(values)) == len(values)
+                and all([len(sq.options) > 0 for sq in seq]))
     # endregion
 
     def is_solved(self):
