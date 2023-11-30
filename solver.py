@@ -302,7 +302,33 @@ class Solver:
                         self._update_pos((x, y))
         return changed
 
-    # def _solve_single_y_row_in_region(self):
+    def _solve_single_y_row_in_region(self, r_idx_x: int, r_idx_y: int, update_options=True):
+        rix = r_idx_x
+        riy = r_idx_y
+        r0x = rix * 3
+        r0y = riy * 3
+        options_in_rows = [
+            Counter(chain_from_iterable(
+                [self.get_pos((x, y)).options for x in range(r0x, r0x + 3)]
+            )) for y in range(r0y, r0y + 3)]
+        all_options = Counter(chain_from_iterable(options_in_rows))
+        changed = True
+        for yi in range(3):
+            for num, count_in_row in options_in_rows[yi].items():
+                # skip if none in this row or there are some elsewhere in this region
+                if count_in_row == 0 or count_in_row < all_options[num]: continue
+                # only in this row (within curr region)
+                # so remove occurrences in other regions
+                y = r0y + yi
+                for x in range(9):
+                    # skip if in current region
+                    if r0x <= x < r0x + 3: continue
+                    self.get_pos((x, y)).options -= {num}
+                    changed = True
+                    if update_options:
+                        self._update_pos((x, y))
+        return changed
+
 
     def _update_pos(self, pos: tuple[int, int]):
         x, y = pos
