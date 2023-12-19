@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Iterable
 if TYPE_CHECKING:
     from _typeshed import SupportsWrite, SupportsRead
 
-from solver import Board, Solver, SolverMethod
+from solver import Board, Solver, SolverMethod, BoardClass
 
 BASE_BOARD = Board([
     1,2,3,4,5,6,7,8,9,
@@ -29,7 +29,8 @@ _check_base_board()
 
 
 class GeneratorBackend:
-    def find_hard_sudoku(self, max_tries: int = 1_000, r: random.Random = None, initial_n: int = 12):
+    def find_hard_sudoku(self, max_tries: int = 1_000, r: random.Random = None,
+                         initial_n: int = 12, initial_step: int = 4):
         if r is None:
             r = random.Random()
         for i in range(max_tries):
@@ -37,13 +38,45 @@ class GeneratorBackend:
             initial_rm = r.sample(tuple(range(81)), initial_n)
             for pos in initial_rm:
                 board[pos] = 0
-            if not self.is_solvable(board):
-                continue
-            ...  # TODO
-        ...
+            match self.classify_board(board, debug=False):
+                case BoardClass.unsolvable:
+                    continue
+                case BoardClass.hard:
+                    return board
+            prev = board.copy()
+            rm_now: list[int] | None = None
+            for j in range(0, 80, initial_step):
+                rm_now = r.sample(tuple(range(81)), initial_n)
+                for pos in rm_now:
+                    board[pos] = 0
+                match self.classify_board(board, debug=False):
+                    case BoardClass.hard:
+                        return board
+                    case BoardClass.unsolvable:
+                        break  # try to backtrack
+                prev = board
+                board = board.copy()
+            # try to backtrack
+            # assert self.classify_board(board) == BoardClass.unsolvable
+            # assert self.classify_board(prev) == BoardClass.easy
+            # assert rm_now
+            board = prev  # load backup prev board
+            for rm in rm_now:
+                board[rm] = 0
+                match self.classify_board(board, debug=False):
+                    case BoardClass.hard:
+                        return board
+                    case BoardClass.unsolvable:
+                        break  # backtrack failed - no hard 'region'
+            # Here, no hard 'region' so nothing to return so try next
+            # assert self.classify_board(board) == BoardClass.unsolvable
+        return None
 
     def is_easy(self, b: Board):
-        return Solver(b.copy()).solve_f(include=[SolverMethod.one_occurrence_in])
+        return Solver(b).solve_f(include=[SolverMethod.one_occurrence_in])
+
+    def classify_board(self, b: Board, debug: bool = True) -> BoardClass:
+        return Solver(b, debug).classify_board()
 
     def load_board_csv(self, f: Iterable[str]) -> Board:
         reader = csv.reader(f, csv.unix_dialect)

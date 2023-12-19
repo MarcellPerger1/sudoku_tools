@@ -180,6 +180,14 @@ def main():
     for p in Path('../out/').iterdir():
         if p.suffix != '.csv': continue
         is_simple(p)
+    with cProfile.Profile() as p:
+        t0 = time.perf_counter()
+        board = GeneratorBackend().find_hard_sudoku(initial_n=30)
+        t1 = time.perf_counter()
+    print(board)
+    print(t1 - t0)
+    p.print_stats(sort='cumtime')
+    p.dump_stats('./find_boards.prof')
     TkinterFrontendApp(curr_board=board).root.mainloop()
 
 

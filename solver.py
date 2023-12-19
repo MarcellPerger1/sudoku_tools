@@ -54,6 +54,12 @@ class SolverMethod(StrEnum):
     line_in_region = 'line_in_region'
 
 
+class BoardClass(StrEnum):
+    unsolvable = 'unsolvable'
+    easy = 'easy'
+    hard = 'hard'
+
+
 class Solver:
     grid: list[SquareInfo]
 
@@ -131,6 +137,22 @@ class Solver:
             raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
         self.has_solution = self.is_solved()
         return self.has_solution
+
+    # TODO This probably needs to be more general if it is to stay in here
+    def classify_board(self) -> BoardClass:
+        if self.debug and not self.check_validity():
+            raise InvalidSudokuError("The sudoku is not valid, precondition not met")
+        self._fill_options()
+        self._solve_only_one_occurrence_x()
+        if self.is_solved():
+            if self.debug and not self.check_validity():
+                raise AssertionError(
+                    "The sudoku solver got invalid result: something has gone wrong")
+            return BoardClass.easy
+        self.solve()
+        if self.has_solution:
+            return BoardClass.hard
+        return BoardClass.unsolvable
 
     # region solve_filtered
     def solve_filtered(self, default: SolverFilterDefault = None,
