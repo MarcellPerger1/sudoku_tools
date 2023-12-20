@@ -29,11 +29,47 @@ _check_base_board()
 
 
 class GeneratorBackend:
+    def find_hard_sudoku_parallel(
+            self, max_tries: int = 1_000,
+            initial_n: int = 12, initial_step: int = 4,
+            print_every: int = 0, pretty_progress=False, cores=None):
+        if cores is None:
+            cores = (os.cpu_count() or 4) // 2
+        sys_rand = random.SystemRandom()
+        args_list: list[tuple[int, random.Random, int, int, int, bool]] = [
+            (max_tries // cores,  # max_tries
+             random.Random(sys_rand.getrandbits(32)),  # random
+             initial_n, initial_step,
+             # only print from thread 1
+             print_every if i == 0 else 0, pretty_progress)
+            for i in range(cores)]
+        with Pool(cores) as ppool:
+            results_it = ppool.imap_unordered(self._find_hard_sudoku_worker, args_list)
+            for res in results_it:
+                if res is not None:
+                    return res
+        return None
+
+    def _find_hard_sudoku_worker(self, args: tuple[int, random.Random, int, int, int, bool]):
+        return self.find_hard_sudoku(*args)
+
     def find_hard_sudoku(self, max_tries: int = 1_000, r: random.Random = None,
-                         initial_n: int = 12, initial_step: int = 4):
+                         initial_n: int = 12, initial_step: int = 4,
+                         print_every: int = 0, pretty_progress=False):
         if r is None:
             r = random.Random()
+        if print_every != 0 and pretty_progress:
+            def on_done(): print()
+        else:
+            def on_done(): pass
         for i in range(max_tries):
+            if print_every != 0 and i % print_every == 0:
+                if pretty_progress:
+                    # don't overwrite prev line
+                    start_s = '' if i == 0 else '\r'
+                    print(f'{start_s}{i/max_tries*100:>4.1f}% ({i}/{max_tries})', end='')
+                elif i != 0:
+                    print(f'{i/max_tries*100:>4.1f}% progress ({i}/{max_tries} done)')
             board = BASE_BOARD.copy()
             initial_rm = r.sample(tuple(range(81)), initial_n)
             for pos in initial_rm:
@@ -42,6 +78,7 @@ class GeneratorBackend:
                 case BoardClass.unsolvable:
                     continue
                 case BoardClass.hard:
+                    on_done()
                     return board
             prev = board.copy()
             rm_now: list[int] | None = None
@@ -51,6 +88,7 @@ class GeneratorBackend:
                     board[pos] = 0
                 match self.classify_board(board, debug=False):
                     case BoardClass.hard:
+                        on_done()
                         return board
                     case BoardClass.unsolvable:
                         break  # try to backtrack
@@ -65,11 +103,13 @@ class GeneratorBackend:
                 board[rm] = 0
                 match self.classify_board(board, debug=False):
                     case BoardClass.hard:
+                        on_done()
                         return board
                     case BoardClass.unsolvable:
                         break  # backtrack failed - no hard 'region'
             # Here, no hard 'region' so nothing to return so try next
             # assert self.classify_board(board) == BoardClass.unsolvable
+        on_done()
         return None
 
     def is_easy(self, b: Board):
