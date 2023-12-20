@@ -36,11 +36,30 @@ class TkinterFrontendApp:
         self.easy_lb.grid(row=2, columnspan=2, column=1)
         self.button_save_csv = tk.Button(self.root, text='Save as CSV', command=self.save_as_csv)
         self.button_save_csv.grid(row=3, column=1)
+        self.load_button = tk.Button(self.root, text='Load CSV', command=self.load_csv)
+        self.load_button.grid(row=3, column=2)
 
         self.update_colors()
         self.root.bind_all('<Button-1>', self.onclick)
         self.root.bind_all('<Button-3>', self.on_right_click)
         self._update_info()
+
+    def load_csv(self, _e=None):
+        filename = filedialog.askopenfilename(
+            filetypes=(('CSV files', '*.csv'), ('All files', '*.*')),
+            defaultextension='.csv', parent=self.root, title='Open sudoku CSV')
+        if not filename: return
+        try:
+            with open(filename, 'r') as f:
+                board_f = self.backend.load_board_csv(f)
+        except (FileNotFoundError, IsADirectoryError):
+            self.root.bell()
+            return
+        else:
+            self.board = board_f
+            _, self.orig_board = self.backend.solve_board(board_f)
+            self.update_colors()
+            self._update_info()
 
     def _update_info(self):
         is_easy = self.backend.is_easy(self.board)
@@ -185,7 +204,7 @@ def main():
     #     board = GeneratorBackend().find_hard_sudoku(initial_n=30, print_every=10, pretty_progress=True)
     #     t1 = time.perf_counter()
     t0 = time.perf_counter()
-    board = GeneratorBackend().find_hard_sudoku_parallel(initial_n=30, max_tries=10_000, print_every=20, pretty_progress=True)
+    # board = GeneratorBackend().find_hard_sudoku_parallel(initial_n=30, max_tries=10_000, print_every=20, pretty_progress=True)
     t1 = time.perf_counter()
     print(board)
     print(t1 - t0)
