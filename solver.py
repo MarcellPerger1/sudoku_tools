@@ -72,7 +72,8 @@ class Solver:
         self.debug = debug
 
     def get_pos(self, pos: tuple[int, int]):
-        return self.grid[pos_to_idx(pos)]
+        # inlined from: return self.grid[pos_to_idx(pos)]
+        return self.grid[pos[0] + pos[1] * 9]
 
     def print(self, file: IO[str]=None, end='\n'):
         if file is None: file = sys.stdout
