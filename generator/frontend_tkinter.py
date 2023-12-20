@@ -28,21 +28,27 @@ class TkinterFrontendApp:
         self.root.title('Sudoku generator frontend (tkinter)')
         self.root.columnconfigure(1, weight=1)
         self.root.columnconfigure(2, weight=1)
+        self.root.rowconfigure(1, weight=1)
 
         self.table_container = tk.Frame(self.root, highlightthickness=1, highlightbackground='black')
         self._create_9x9_table()
-        self.table_container.grid(row=1,column=1, padx=5, pady=5., columnspan=2)
+        self.table_container.grid(row=1, column=1, padx=5, pady=5, columnspan=2, sticky='NSEW')
         self.easy_lb = tk.Label(self.root, text='Easy: yes', fg='green')
         self.easy_lb.grid(row=2, columnspan=2, column=1)
         self.button_save_csv = tk.Button(self.root, text='Save as CSV', command=self.save_as_csv)
-        self.button_save_csv.grid(row=3, column=1)
+        self.button_save_csv.grid(row=3, column=1, pady=3, padx=5, sticky='EW')
         self.load_button = tk.Button(self.root, text='Load CSV', command=self.load_csv)
-        self.load_button.grid(row=3, column=2)
+        self.load_button.grid(row=3, column=2, pady=3, padx=5, sticky='EW')
 
         self.update_colors()
         self.root.bind_all('<Button-1>', self.onclick)
         self.root.bind_all('<Button-3>', self.on_right_click)
         self._update_info()
+        self._update_minsize()
+
+    def _update_minsize(self):
+        self.root.update()
+        self.root.minsize(self.root.winfo_width(), self.root.winfo_height())
 
     def load_csv(self, _e=None):
         filename = filedialog.askopenfilename(
