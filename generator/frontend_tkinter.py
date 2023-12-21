@@ -4,7 +4,7 @@ from backend import GeneratorBackend, Board
 import tkinter as tk
 from tkinter import filedialog
 
-from solver import Solver, SolverMethod
+from solver import Solver, SolverMethod, BoardClass
 
 
 def idx_to_pos(idx: int) -> tuple[int, int]:
@@ -68,11 +68,13 @@ class TkinterFrontendApp:
             self._update_info()
 
     def _update_info(self):
-        is_easy = self.backend.is_easy(self.board)
-        if is_easy:
-            self.easy_lb.configure(text='Easy: yes', fg='green')
-        else:
-            self.easy_lb.configure(text='Easy: NO', fg='orange')
+        match self.backend.classify_board(self.board):
+            case BoardClass.easy:
+                self.easy_lb.configure(text='Easy: yes', fg='green')
+            case BoardClass.hard:
+                self.easy_lb.configure(text='Easy: NO', fg='orange')
+            case BoardClass.unsolvable:
+                self.easy_lb.configure(text='UNSOLVABLE!', fg='red')
 
     def _curr_to_orig_board(self, curr_board):
         is_solvable, solution = self.backend.solve_board(curr_board)
