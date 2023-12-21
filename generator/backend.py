@@ -266,13 +266,16 @@ class GeneratorBackend:
         return Board([old_to_new_nums[board[i] - 1] for i in range(81)])
 
     def generate_random_board(self, r: random.Random = None):
+        return self.shuffled_board(BASE_BOARD, r)
+
+    def shuffled_board(self, board: Board, r: random.Random = None):
         if r is None:
             r = random.Random()
         # we start from a known solution and try and change it in ways
         # that preserve the property of being a sudoku solution
         # I'm not sure if this can generate all possible sudoku solutions
         # but it's good enough
-        board = BASE_BOARD.copy()
+        board = board.copy()
         for rx in range(3):
             board = self._shuffled_x_cols_in_x_region(board, r, rx)
         for ry in range(3):
