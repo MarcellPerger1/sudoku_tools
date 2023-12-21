@@ -124,6 +124,7 @@ class TkinterFrontendApp:
         if (idx := self._get_event_sq_idx(event)) is not None:
             self.board[idx] = self.orig_board[idx]
             self.update_colors()
+            self._update_info()
 
     def onclick(self, event: 'tk.Event[tk.Misc]'):
         idx = self._get_event_sq_idx(event)
@@ -137,12 +138,36 @@ class TkinterFrontendApp:
             return
         self.board[idx] = 0
         self.update_colors()
+        self._update_info()
 
 
-def main():
-    import time, cProfile
+def get_want_tree():
     def w_list(y: int, row: list[int]) -> list[tuple[int, int]]:
         return [(x, y) for x in row]
+
+    basic_want: list[tuple[int, int] | int] = [
+        *w_list(0, [2, 3, 5, 6]),
+        *w_list(1, [1, 2, 6, 7]),
+        *w_list(2, [0, 1, 7, 8]),
+        *w_list(3, [0, 1, 2, 6, 7, 8]),
+        *w_list(4, [0, 1, 7, 8]),
+        *w_list(5, [0, 8]),
+        *w_list(6, []),
+        *w_list(7, [0, 1, 2, 6, 7, 8]),
+        *w_list(8, [0, 1, 7, 8]),
+    ]
+    extra_want = [
+        *w_list(0, [1, 7]),
+        *w_list(1, [0, 8]),
+        *w_list(0, [0, 8]),
+    ]
+    return basic_want, extra_want
+
+
+def get_want_star():
+    def w_list(y: int, row: list[int]) -> list[tuple[int, int]]:
+        return [(x, y) for x in row]
+
     basic_want: list[tuple[int, int] | int] = [
         *w_list(0, [2, 3, 5, 6]),
         *w_list(1, [1, 2, 3, 5, 6, 7]),
@@ -158,6 +183,11 @@ def main():
         *w_list(0, [1, 7]),
         *w_list(0, [0, 8])
     ]
+    return basic_want, extra_want
+
+def main():
+    import time, cProfile
+    basic_want, extra_want = get_want_star()
     def find_it():
         return GeneratorBackend().find_boards_matching(
             basic_want + extra_want, want_min=len(basic_want),
@@ -210,12 +240,13 @@ def main():
     #     board = GeneratorBackend().find_hard_sudoku(initial_n=30, print_every=10, pretty_progress=True)
     #     t1 = time.perf_counter()
     t0 = time.perf_counter()
-    # board = GeneratorBackend().find_hard_sudoku_parallel(initial_n=30, max_tries=10_000, print_every=20, pretty_progress=True)
+    # board = GeneratorBackend().find_hard_sudoku_parallel(initial_n=30, max_tries=20_000, print_every=20, pretty_progress=True)
     t1 = time.perf_counter()
     print(board)
     print(t1 - t0)
     # p.print_stats(sort='cumtime')
     # p.dump_stats('./find_boards.prof')
+    _, board = find_it_mp()
     TkinterFrontendApp(curr_board=board).root.mainloop()
 
 
