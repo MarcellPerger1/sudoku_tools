@@ -263,7 +263,7 @@ class GeneratorBackend:
         old_to_new_nums = [*range(1, 9+1)]
         r.shuffle(old_to_new_nums)
         # `- 1` to convert from 1-9 to 0-8
-        return Board([old_to_new_nums[board[i] - 1] for i in range(81)])
+        return Board([0 if board[i] == 0 else old_to_new_nums[board[i] - 1] for i in range(81)])
 
     def generate_random_board(self, r: random.Random = None):
         return self.shuffled_board(BASE_BOARD, r)
