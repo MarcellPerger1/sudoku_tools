@@ -2,7 +2,7 @@ import csv
 from multiprocessing.pool import Pool
 import os
 import random
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Literal
 
 if TYPE_CHECKING:
     from _typeshed import SupportsWrite, SupportsRead
@@ -32,13 +32,14 @@ class GeneratorBackend:
     def find_hard_sudoku_parallel(
             self, max_tries: int = 1_000,
             initial_n: int = 12, initial_step: int = 4,
-            print_every: int = 0, pretty_progress=False, cores=None):
+            print_every: int = 0, pretty_progress=False, cores=None,
+            use_sys_rand = False):
         if cores is None:
             cores = (os.cpu_count() or 4) // 2
         sys_rand = random.SystemRandom()
         args_list: list[tuple[int, random.Random, int, int, int, bool]] = [
             (max_tries // cores,  # max_tries
-             random.Random(sys_rand.getrandbits(32)),  # random
+             'system' if use_sys_rand else random.Random(sys_rand.getrandbits(32)),
              initial_n, initial_step,
              # only print from thread 1
              print_every if i == 0 else 0, pretty_progress)
@@ -48,16 +49,23 @@ class GeneratorBackend:
             for res in results_it:
                 if res is not None:
                     return res
+        if pretty_progress and print_every != 0:
+            # Ensure that we're on a new line as printing process might
+            # not have been the one to find it,
+            # so it might've been .terminated()d without printing \n
+            print()
         return None
 
-    def _find_hard_sudoku_worker(self, args: tuple[int, random.Random, int, int, int, bool]):
+    def _find_hard_sudoku_worker(self, args: tuple[int, random.Random | Literal['system'], int, int, int, bool]):
         return self.find_hard_sudoku(*args)
 
-    def find_hard_sudoku(self, max_tries: int = 1_000, r: random.Random = None,
+    def find_hard_sudoku(self, max_tries: int = 1_000, r: random.Random | Literal['system'] = None,
                          initial_n: int = 12, initial_step: int = 4,
                          print_every: int = 0, pretty_progress=False):
         if r is None:
             r = random.Random()
+        if r == 'system':
+            r = random.SystemRandom()
         if print_every != 0 and pretty_progress:
             def on_done(): print()
         else:
