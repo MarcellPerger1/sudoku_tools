@@ -245,7 +245,7 @@ def main():
         else:
             steps = ts.get_solution_steps()
         steps_s = '\n'.join(s.fmt() for s in steps)
-        with open(Path('../out/solutions') / filename.name, 'w') as f:
+        with open((Path('../out/solutions') / filename.name).with_suffix('.txt'), 'w') as f:
             f.write(steps_s)
     for p in Path('../out/').iterdir():
         if p.suffix != '.csv': continue
