@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import filedialog
 
 from solver import Solver, SolverMethod, BoardClass
+from tracing_solver import TracingSolver
 
 
 def idx_to_pos(idx: int) -> tuple[int, int]:
@@ -234,9 +235,22 @@ def main():
             s = Solver(b)
             can_s = s.solve_filtered(include=[SolverMethod.one_occurrence_in])
             print(f'{Path(filename).with_suffix("").name}: one_occurrence:', can_s, s.grid)
+    def gen_solution(filename: Path):
+        backend = GeneratorBackend()
+        with open(filename) as f:
+            b = backend.load_board_csv(f)
+        ts = TracingSolver(b)
+        if backend.is_easy(b):
+            steps = ts.get_solution_steps_f(include=[SolverMethod.one_occurrence_in])
+        else:
+            steps = ts.get_solution_steps()
+        steps_s = '\n'.join(s.fmt() for s in steps)
+        with open(Path('../out/solutions') / filename.name, 'w') as f:
+            f.write(steps_s)
     for p in Path('../out/').iterdir():
         if p.suffix != '.csv': continue
         is_simple(p)
+        gen_solution(p)
     # with cProfile.Profile() as p:
     #     t0 = time.perf_counter()
     #     board = GeneratorBackend().find_hard_sudoku(initial_n=30, print_every=10, pretty_progress=True)
