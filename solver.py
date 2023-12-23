@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import itertools
 import sys
 from collections import Counter
@@ -27,6 +28,9 @@ class SquareInfo:
 
     def fmt(self):
         return str(self.value) if self.value != 0 else str(self.options)
+
+    def copy(self):
+        return dataclasses.replace(self)
 
 
 #  0  1  2  3 ...
@@ -352,6 +356,7 @@ class Solver:
                         opts -= {num}
                         changed = True
                         if update_options:
+                            self._trace_removed_ = num
                             self._update_pos((x, y))
         return changed
 
@@ -382,6 +387,10 @@ class Solver:
                         opts -= {num}
                         changed = True
                         if update_options:
+                            # TODO don't think it's a good idea to care
+                            #  about the TracingSolver here but whatever
+                            self._trace_removed_ = num
+                            # TODO is this really necessary? - not placing anything
                             self._update_pos((x, y))
         return changed
     # endregion
