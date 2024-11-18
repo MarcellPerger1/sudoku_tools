@@ -11,6 +11,7 @@ from typing import IO, Iterable, cast, TypeVar
 
 from board import Board
 
+TUPLE_RANGE9: tuple[int, ...]
 TUPLE_RANGE9 = TUPLE_0_TO_8 = tuple(range(9))
 SET_1_TO_9 = frozenset(range(1, 9+1))
 TUPLE_1_TO_9 = tuple(range(1, 9+1))
@@ -75,6 +76,30 @@ class Solver:
             for i, v in enumerate(grid)]
         self.has_solution = None
         self.debug = debug
+        self._gen_values_in_seq()
+
+    def _gen_values_in_seq(self):
+        self._col_values = [
+            {self.get_pos_2(x, y).value for y in TUPLE_RANGE9} - {0}
+            for x in range(9)]
+        self._row_values = [
+            {self.get_pos_2(x, y).value for x in TUPLE_RANGE9} - {0}
+            for y in range(9)]
+        self._region_values = [
+            [
+                {
+                    self.get_pos_2(x, y).value
+                    for x in range(rx0, rx0 + 3)
+                    for y in range(ry0, ry0 + 3)
+                } - {0} for ry0 in range(0, 9, 3)
+            ] for rx0 in range(0, 9, 3)
+        ]
+
+    def _update_value_set(self, pos: tuple[int, int], value: int):
+        x, y = pos
+        self._col_values[x].add(value)
+        self._row_values[y].add(value)
+        self._region_values[x // 3][y // 3].add(value)
 
     def get_pos(self, pos: tuple[int, int]):
         # inlined from: return self.grid[pos_to_idx(pos)]
@@ -288,6 +313,7 @@ class Solver:
                 if num in sq.options and sq.value == 0:
                     sq.options = {num}
                     sq.value = num
+                    self._update_value_set(sq.pos, num)
                     if update_options:
                         self._update_pos(sq.pos)
                     changed = True
@@ -310,6 +336,7 @@ class Solver:
                     sq = self.get_pos_2(x, y)
                     if sq.value == 0 and len(sq.options) == 1:
                         (sq.value,) = sq.options
+                        self._update_value_set(sq.pos, sq.value)
                         changed = True
         else:
             for x in range(9):
@@ -317,6 +344,7 @@ class Solver:
                     sq = self.get_pos_2(x, y)
                     if sq.value == 0 and len(sq.options) == 1:
                         (sq.value,) = sq.options
+                        self._update_value_set(sq.pos, sq.value)
                         # can update it inside the loop as usually only one
                         # square per row needs to be changed but it makes
                         # insanely hard to debug
@@ -424,7 +452,9 @@ class Solver:
 
     def _fill_options_x_col(self, x: int):
         gp2 = self.get_pos_2
-        definite_nums = {gp2(x, y).value for y in range(9)}
+        definite_nums = self._col_values[x]
+        # if definite_nums != {gp2(x, y).value for y in range(9)} - {0}:
+        #     raise ValueError
         # definite_nums -= {0}
         for y in range(9):
             sq = gp2(x, y)
@@ -433,7 +463,9 @@ class Solver:
 
     def _fill_options_y_row(self, y: int):
         gp2 = self.get_pos_2
-        definite_nums = {gp2(x, y).value for x in range(9)}
+        definite_nums = self._row_values[y]
+        # if definite_nums != {gp2(x, y).value for x in range(9)} - {0}:
+        #     raise ValueError
         # definite_nums -= {0}  # We're only subtracting this to {0} can stay
         for x in range(9):
             sq = gp2(x, y)
@@ -444,9 +476,11 @@ class Solver:
         gp2 = self.get_pos_2
         rx0 = r_idx_x * 3
         ry0 = r_idx_y * 3
-        definite_nums = {gp2(x, y).value
-                         for x in range(rx0, rx0 + 3)
-                         for y in range(ry0, ry0 + 3)}
+        definite_nums = self._region_values[r_idx_x][r_idx_y]
+        # if definite_nums != {gp2(x, y).value
+        #                  for x in range(rx0, rx0 + 3)
+        #                  for y in range(ry0, ry0 + 3)} - {0}:
+        #     raise ValueError
         # definite_nums -= {0}
         for x in range(rx0, rx0 + 3):
             for y in range(ry0, ry0 + 3):
