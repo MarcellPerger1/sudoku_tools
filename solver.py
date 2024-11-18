@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import collections
 import dataclasses
 import itertools
 import sys
@@ -78,18 +79,22 @@ class Solver:
     def get_pos(self, pos: tuple[int, int]):
         # inlined from: return self.grid[pos_to_idx(pos)]
         return self.grid[pos[0] + pos[1] * 9]
+    
+    def get_pos_2(self, x: int, y: int):
+        # inlined from: return self.grid[pos_to_idx(pos)]
+        return self.grid[x + y * 9]
 
     def print(self, file: IO[str]=None, end='\n'):
         if file is None: file = sys.stdout
         for y in range(9):
             for x in range(9):
-                print(f'{self.get_pos((x, y)).fmt():<27}',
+                print(f'{self.get_pos_2(x, y).fmt():<27}',
                       end=' ' if x != 8 else '', file=file)
             print(file=file, end='\n' if y != 8 else end)
 
     def fmt(self) -> str:
         return '\n'.join(
-            ' '.join(f'{self.get_pos((x, y)).fmt():<27}'
+            ' '.join(f'{self.get_pos_2(x, y).fmt():<27}'
                      for x in range(9)) for y in range(9))
 
     # region check_validity
@@ -107,14 +112,14 @@ class Solver:
         return True
 
     def _check_validity_x_col(self, x: int):
-        return self._check_validity_seq([self.get_pos((x, y)) for y in range(9)])
+        return self._check_validity_seq([self.get_pos_2(x, y) for y in range(9)])
     def _check_validity_y_row(self, y: int):
-        return self._check_validity_seq([self.get_pos((x, y)) for x in range(9)])
+        return self._check_validity_seq([self.get_pos_2(x, y) for x in range(9)])
     def _check_validity_region(self, r_idx_x: int, r_idx_y: int) -> bool:
         rx0 = r_idx_x * 3
         ry0 = r_idx_y * 3
         return self._check_validity_seq([
-            self.get_pos((x, y)) for x in range(rx0, rx0+3) for y in range(ry0, ry0+3)])
+            self.get_pos_2(x, y) for x in range(rx0, rx0+3) for y in range(ry0, ry0+3)])
 
     def _check_validity_seq(self, seq: list[SquareInfo]):
         values = [sq.value for sq in seq if sq.value != 0]
@@ -241,7 +246,7 @@ class Solver:
                     changed = True
         return changed
     def _solve_1_occurrence_x_col(self, x: int, update_options: bool = True) -> bool:
-        return self._handle_1_occurrence_in_seq([self.get_pos((x, y)) for y in TUPLE_RANGE9], update_options)
+        return self._handle_1_occurrence_in_seq([self.get_pos_2(x, y) for y in TUPLE_RANGE9], update_options)
         # nums_in_col: list[tuple[int, None | int]] = [(0, None)] * 9
         # for y, sq in enumerate(column):
         #     if sq.value != 0: continue
@@ -256,17 +261,22 @@ class Solver:
         #         column[y].options = {num}
 
     def _solve_1_occurrence_y_row(self, y: int, update_options: bool = True) -> bool:
-        return self._handle_1_occurrence_in_seq([self.get_pos((x, y)) for x in TUPLE_RANGE9], update_options)
+        return self._handle_1_occurrence_in_seq([self.get_pos_2(x, y) for x in TUPLE_RANGE9], update_options)
 
     def _solve_1_occurrence_region(self, r_idx_x: int, r_idx_y: int, update_options: bool = True) -> bool:
         rx0 = r_idx_x * 3
         ry0 = r_idx_y * 3
         return self._handle_1_occurrence_in_seq([
-            self.get_pos((x, y)) for x in range(rx0, rx0+3) for y in range(ry0, ry0+3)], update_options)
+            self.get_pos_2(x, y) for x in range(rx0, rx0+3) for y in range(ry0, ry0+3)], update_options)
 
     def _handle_1_occurrence_in_seq(self, seq: list[SquareInfo], update_options: bool = True) -> bool:
         changed = False
-        options_nums: Counter[int] = Counter(itertools.chain.from_iterable(
+        # options_nums: Counter[int] = Counter(itertools.chain.from_iterable(
+        #     # also include if value == 0 because then, it won't try to
+        #     # place a num somewhere else that's already actually in the row
+        #     [v.options for v in seq]))
+        options_nums: dict[int, int] = {}
+        collections._count_elements(options_nums, itertools.chain.from_iterable(
             # also include if value == 0 because then, it won't try to
             # place a num somewhere else that's already actually in the row
             [v.options for v in seq]))
@@ -297,14 +307,14 @@ class Solver:
         if not update_options:
             for x in range(9):
                 for y in range(9):
-                    sq = self.get_pos((x, y))
+                    sq = self.get_pos_2(x, y)
                     if sq.value == 0 and len(sq.options) == 1:
                         (sq.value,) = sq.options
                         changed = True
         else:
             for x in range(9):
                 for y in range(9):
-                    sq = self.get_pos((x, y))
+                    sq = self.get_pos_2(x, y)
                     if sq.value == 0 and len(sq.options) == 1:
                         (sq.value,) = sq.options
                         # can update it inside the loop as usually only one
@@ -328,6 +338,7 @@ class Solver:
             for ry in range(3):
                 changed = self._solve_single_x_col_in_region(rx, ry, update_options) or changed
                 changed = self._solve_single_y_row_in_region(rx, ry, update_options) or changed
+        return changed
 
     def _solve_single_x_col_in_region(self, r_idx_x: int, r_idx_y: int, update_options=True):
         rix = r_idx_x
@@ -336,11 +347,11 @@ class Solver:
         r0y = riy * 3
         options_in_cols = [
             Counter(chain_from_iterable(
-                [self.get_pos((x, y)).options for y in range(r0y, r0y + 3)]
+                [self.get_pos_2(x, y).options for y in range(r0y, r0y + 3)]
             )) for x in range(r0x, r0x + 3)]
         # rather precarious to use sum() on non-numeric types but performance
         all_options = sum(options_in_cols, Counter())
-        changed = True
+        changed = False
         for xi in range(3):
             for num, count_in_col in options_in_cols[xi].items():
                 # skip if none in this col or there are some elsewhere in this region
@@ -351,7 +362,7 @@ class Solver:
                 for y in range(9):
                     # skip if in current region
                     if r0y <= y < r0y + 3: continue
-                    opts = self.get_pos((x, y)).options
+                    opts = self.get_pos_2(x, y).options
                     if num in opts:
                         opts -= {num}
                         changed = True
@@ -367,11 +378,11 @@ class Solver:
         r0y = riy * 3
         options_in_rows = [
             Counter(chain_from_iterable(
-                [self.get_pos((x, y)).options for x in range(r0x, r0x + 3)]
+                [self.get_pos_2(x, y).options for x in range(r0x, r0x + 3)]
             )) for y in range(r0y, r0y + 3)]
         # rather precarious to use sum() on non-numeric types but performance
         all_options = sum(options_in_rows, Counter())
-        changed = True
+        changed = False
         for yi in range(3):
             for num, count_in_row in options_in_rows[yi].items():
                 # skip if none in this row or there are some elsewhere in this region
@@ -382,7 +393,7 @@ class Solver:
                 for x in range(9):
                     # skip if in current region
                     if r0x <= x < r0x + 3: continue
-                    opts = self.get_pos((x, y)).options
+                    opts = self.get_pos_2(x, y).options
                     if num in opts:
                         opts -= {num}
                         changed = True
@@ -412,31 +423,34 @@ class Solver:
                 self._fill_options_region(rx, ry)
 
     def _fill_options_x_col(self, x: int):
-        definite_nums = {self.get_pos((x, y)).value for y in range(9)}
-        definite_nums -= {0}
+        gp2 = self.get_pos_2
+        definite_nums = {gp2(x, y).value for y in range(9)}
+        # definite_nums -= {0}
         for y in range(9):
-            sq = self.get_pos((x, y))
+            sq = gp2(x, y)
             if sq.value == 0:
                 sq.options -= definite_nums
 
     def _fill_options_y_row(self, y: int):
-        definite_nums = {self.get_pos((x, y)).value for x in range(9)}
-        definite_nums -= {0}
+        gp2 = self.get_pos_2
+        definite_nums = {gp2(x, y).value for x in range(9)}
+        # definite_nums -= {0}  # We're only subtracting this to {0} can stay
         for x in range(9):
-            sq = self.get_pos((x, y))
+            sq = gp2(x, y)
             if sq.value == 0:
                 sq.options -= definite_nums
 
     def _fill_options_region(self, r_idx_x: int, r_idx_y: int):
+        gp2 = self.get_pos_2
         rx0 = r_idx_x * 3
         ry0 = r_idx_y * 3
-        definite_nums = {self.get_pos((x, y)).value
+        definite_nums = {gp2(x, y).value
                          for x in range(rx0, rx0 + 3)
                          for y in range(ry0, ry0 + 3)}
-        definite_nums -= {0}
+        # definite_nums -= {0}
         for x in range(rx0, rx0 + 3):
             for y in range(ry0, ry0 + 3):
-                sq = self.get_pos((x, y))
+                sq = gp2(x, y)
                 if sq.value == 0:
                     sq.options -= definite_nums
     # endregion
