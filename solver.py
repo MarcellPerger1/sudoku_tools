@@ -310,7 +310,7 @@ class Solver:
             # only iterate if we've guaranteed found something
             for sq in seq:
                 # only change if nothing already there
-                if num in sq.options and sq.value == 0:
+                if sq.value == 0 and num in sq.options:
                     sq.options = {num}
                     sq.value = num
                     self._update_value_set(sq.pos, num)
