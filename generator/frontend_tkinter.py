@@ -245,9 +245,13 @@ def main():
         else:
             steps = ts.get_solution_steps()
         steps_s = '\n'.join(s.fmt() for s in steps)
-        with open((Path('../out/solutions') / filename.name).with_suffix('.txt'), 'w') as f:
+        with open((filename.parent / 'solutions' / filename.name).with_suffix('.txt'), 'w') as f:
             f.write(steps_s)
     for p in Path('../out/').iterdir():
+        if p.suffix != '.csv': continue
+        is_simple(p)
+        gen_solution(p)
+    for p in Path('../out/v2024').iterdir():
         if p.suffix != '.csv': continue
         is_simple(p)
         gen_solution(p)
@@ -255,16 +259,24 @@ def main():
     #     t0 = time.perf_counter()
     #     board = GeneratorBackend().find_hard_sudoku(initial_n=30, print_every=10, pretty_progress=True)
     #     t1 = time.perf_counter()
+
     t0 = time.perf_counter()
+    # board = GeneratorBackend().find_hard_sudoku(initial_n=30, print_every=10,
+    #                                             pretty_progress=True)
+    t1 = time.perf_counter()
+    # t0 = time.perf_counter()
     # board = GeneratorBackend().find_hard_sudoku_parallel(
     #     initial_n=30, max_tries=20_000, use_sys_rand=True,
     #     print_every=20, pretty_progress=True)
-    t1 = time.perf_counter()
+    # t1 = time.perf_counter()
     print(board)
     print(t1 - t0)
     # p.print_stats(sort='cumtime')
     # p.dump_stats('./find_boards.prof')
     # _, board = find_it_mp()
+    with open('../out/v2024/s_pre_hard_3.csv') as f:
+        print(b := GeneratorBackend().load_board_csv(f))
+        print(Solver(b).classify_board())
     TkinterFrontendApp(curr_board=board).root.mainloop()
 
 
