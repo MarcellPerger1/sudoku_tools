@@ -260,23 +260,24 @@ def main():
     #     board = GeneratorBackend().find_hard_sudoku(initial_n=30, print_every=10, pretty_progress=True)
     #     t1 = time.perf_counter()
 
-    t0 = time.perf_counter()
+    # t0 = time.perf_counter()
     # board = GeneratorBackend().find_hard_sudoku(initial_n=30, print_every=10,
     #                                             pretty_progress=True)
-    t1 = time.perf_counter()
-    # t0 = time.perf_counter()
-    # board = GeneratorBackend().find_hard_sudoku_parallel(
-    #     initial_n=30, max_tries=20_000, use_sys_rand=True,
-    #     print_every=20, pretty_progress=True)
     # t1 = time.perf_counter()
-    print(board)
-    print(t1 - t0)
+    if 0 or 0:
+        t0 = time.perf_counter()
+        board = GeneratorBackend().find_hard_sudoku_parallel(
+            initial_n=30, max_tries=30_000, use_sys_rand=False,
+            print_every=20, pretty_progress=True)
+        t1 = time.perf_counter()
+        print(board)
+        print(t1 - t0)
     # p.print_stats(sort='cumtime')
     # p.dump_stats('./find_boards.prof')
     # _, board = find_it_mp()
-    with open('../out/v2024/s_pre_hard_3.csv') as f:
-        print(b := GeneratorBackend().load_board_csv(f))
-        print(Solver(b).classify_board())
+    # with open('../out/v2024/s_pre_hard_3.csv') as f:
+    #     print(b := GeneratorBackend().load_board_csv(f))
+    #     print(Solver(b).classify_board())
     TkinterFrontendApp(curr_board=board).root.mainloop()
 
 

@@ -66,6 +66,9 @@ class BoardClass(StrEnum):
     hard = 'hard'
 
 
+SOLVE_ORDER_V2 = True
+
+
 class Solver:
     grid: list[SquareInfo]
 
@@ -161,8 +164,11 @@ class Solver:
         self._fill_options()
         changed = True
         while changed:
-            changed = self._solve_single_possibilities_x()
-            changed = self._solve_only_one_occurrence_x() or changed
+            if SOLVE_ORDER_V2:
+                changed = self._solve_fast_steps_x()
+            else:
+                changed = self._solve_single_possibilities_x()
+                changed = self._solve_only_one_occurrence_x() or changed
             if self.is_solved():
                 break
             else:
@@ -172,6 +178,17 @@ class Solver:
             raise AssertionError("The sudoku solver got invalid result: something has gone wrong")
         self.has_solution = self.is_solved()
         return self.has_solution
+
+    def _solve_fast_steps_x(self):
+        changed = False
+        while self._solve_fast_steps():
+            changed = True
+        return changed
+
+    def _solve_fast_steps(self):
+        changed = self._solve_single_possibilities_x()
+        changed = self._solve_only_one_occurrence_x() or changed
+        return changed
 
     # TODO This probably needs to be more general if it is to stay in here
     def classify_board(self) -> BoardClass:
@@ -456,7 +473,7 @@ class Solver:
         # if definite_nums != {gp2(x, y).value for y in range(9)} - {0}:
         #     raise ValueError
         # definite_nums -= {0}
-        for y in range(9):
+        for y in range(9):  # TODO: use slicing here for better perf
             sq = gp2(x, y)
             if sq.value == 0:
                 sq.options -= definite_nums
